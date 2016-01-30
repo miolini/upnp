@@ -3,7 +3,7 @@
 
 A simple implements UPnP protocol for Golang library.  Add port mapping for NAT devices.
 
-在内网中搜索网关设备，检查网关是否支持upnp协议，若支持，添加端口映射。
+Including network search gateway device, check whether the gateway supports upnp agreement, if supported, add port mapping.
 
 ====
 
