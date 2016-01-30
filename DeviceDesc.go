@@ -39,7 +39,7 @@ func (this *DeviceDesc) BuildRequest() (*http.Request, error) {
 	header.Set("Connection", "keep-alive")
 
 	//请求
-	request, err := http.NewRequest("GET", "http://"+this.upnp.Gateway.Host+this.upnp.Gateway.DeviceDescUrl, nil)
+	request, err := http.NewRequest("GET", "http://" + this.upnp.Gateway.Host + this.upnp.Gateway.DeviceDescUrl, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -98,11 +98,11 @@ func (this *DeviceDesc) resolve(resultStr string) {
 				case "eventSubURL":
 				// eventSubURL = content
 				case "SCPDURL":
-					// SCPDURL = content
+				// SCPDURL = content
 				}
 			}
 		default:
-			// ...
+		// ...
 		}
 	}
 	this.upnp.CtrlUrl = controlURL

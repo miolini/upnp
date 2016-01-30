@@ -5,8 +5,6 @@ import (
 	"log"
 	"net"
 	"strings"
-	"time"
-	// "net/http"
 )
 
 type Gateway struct {
@@ -51,18 +49,18 @@ func (this *SearchGateway) SendMessage() (result string, err error) {
 			err = fmt.Errorf("panic err: %s", r)
 		}
 	}()
-	go func(conn *net.UDPConn) {
-		defer func() {
-			if r := recover(); r != nil {
-				log.Printf("panic in timeout conn err: %s", err)
-			}
-		}()
-		//Timeout to 3 seconds
-		time.Sleep(time.Second * 3)
-		if err := conn.Close(); err != nil {
-			log.Printf("conn close err: %s", err)
-		}
-	}(conn)
+	//go func(conn *net.UDPConn) {
+	//	defer func() {
+	//		if r := recover(); r != nil {
+	//			log.Printf("panic in timeout conn err: %s", err)
+	//		}
+	//	}()
+	//	//Timeout to 3 seconds
+	//	time.Sleep(time.Second * 3)
+	//	if err := conn.Close(); err != nil {
+	//		log.Printf("conn close err: %s", err)
+	//	}
+	//}(conn)
 
 	remotAddr, err := net.ResolveUDPAddr("udp", "239.255.255.250:1900")
 	if err != nil {
