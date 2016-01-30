@@ -7,19 +7,19 @@ import (
 	"strings"
 )
 
-//获取本机能联网的ip地址
-func GetLocalIntenetIp() string {
+//Get this performance networking ip address
+func GetLocalIntenetIp() (string, error) {
 	/*
-	  获得所有本机地址
-	  判断能联网的ip地址
+	  Get all the local address
+	  Analyzing energy networking ip address
 	*/
 
 	conn, err := net.Dial("udp", "google.com:80")
 	if err != nil {
-		panic(errors.New("不能连接网络"))
+		return "", errors.New("You can not connect to the network")
 	}
 	defer conn.Close()
-	return strings.Split(conn.LocalAddr().String(), ":")[0]
+	return strings.Split(conn.LocalAddr().String(), ":")[0], nil
 }
 
 // This returns the list of local ip addresses which other hosts can connect

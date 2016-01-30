@@ -11,17 +11,26 @@ type DeviceDesc struct {
 	upnp *Upnp
 }
 
-func (this *DeviceDesc) Send() bool {
-	request := this.BuildRequest()
-	response, _ := http.DefaultClient.Do(request)
-	resultBody, _ := ioutil.ReadAll(response.Body)
+func (this *DeviceDesc) Send() (bool, error) {
+	request, err := this.BuildRequest()
+	if err != nil {
+		return false, err
+	}
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return false, err
+	}
+	resultBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return false, err
+	}
 	if response.StatusCode == 200 {
 		this.resolve(string(resultBody))
-		return true
+		return true, nil
 	}
-	return false
+	return false, nil
 }
-func (this *DeviceDesc) BuildRequest() *http.Request {
+func (this *DeviceDesc) BuildRequest() (*http.Request, error) {
 	//请求头
 	header := http.Header{}
 	header.Set("Accept", "text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2")
@@ -30,11 +39,14 @@ func (this *DeviceDesc) BuildRequest() *http.Request {
 	header.Set("Connection", "keep-alive")
 
 	//请求
-	request, _ := http.NewRequest("GET", "http://"+this.upnp.Gateway.Host+this.upnp.Gateway.DeviceDescUrl, nil)
+	request, err := http.NewRequest("GET", "http://"+this.upnp.Gateway.Host+this.upnp.Gateway.DeviceDescUrl, nil)
+	if err != nil {
+		return nil, err
+	}
 	request.Header = header
 	// request := http.Request{Method: "GET", Proto: "HTTP/1.1",
 	// 	Host: this.upnp.Gateway.Host, Url: this.upnp.Gateway.DeviceDescUrl, Header: header}
-	return request
+	return request, nil
 }
 
 func (this *DeviceDesc) resolve(resultStr string) {
@@ -65,7 +77,7 @@ func (this *DeviceDesc) resolve(resultStr string) {
 
 		// 处理元素结束（标签）
 		case xml.EndElement:
-			// log.Println("结束标记：", token.Name.Local)
+		// log.Println("结束标记：", token.Name.Local)
 		// 处理字符数据（这里就是元素的文本）
 		case xml.CharData:
 			//得到url后其他标记就不处理了
@@ -84,7 +96,7 @@ func (this *DeviceDesc) resolve(resultStr string) {
 					controlURL = content
 					IScontrolURL = true
 				case "eventSubURL":
-					// eventSubURL = content
+				// eventSubURL = content
 				case "SCPDURL":
 					// SCPDURL = content
 				}

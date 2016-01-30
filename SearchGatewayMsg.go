@@ -1,6 +1,7 @@
 package upnp
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"strings"
@@ -9,15 +10,15 @@ import (
 )
 
 type Gateway struct {
-	GatewayName   string //网关名称
-	Host          string //网关ip和端口
-	DeviceDescUrl string //网关设备描述路径
+	GatewayName   string //Gateway Name
+	Host          string //Gateway ip and port
+	DeviceDescUrl string //Gateway device description path
 	Cache         string //cache
 	ST            string
 	USN           string
-	deviceType    string //设备的urn   "urn:schemas-upnp-org:service:WANIPConnection:1"
-	ControlURL    string //设备端口映射请求路径
-	ServiceType   string //提供upnp服务的服务类型
+	deviceType    string //Urn device "urn: schemas-upnp-org: service: WANIPConnection: 1"
+	ControlURL    string //Device port mapping request path
+	ServiceType   string //Upnp services provide the type of service
 }
 
 type SearchGateway struct {
@@ -25,68 +26,79 @@ type SearchGateway struct {
 	upnp          *Upnp
 }
 
-func (this *SearchGateway) Send() bool {
+func (this *SearchGateway) Send() (bool, error) {
 	this.buildRequest()
-	c := make(chan string)
-	go this.send(c)
-	result := <-c
+	result, err := this.SendMessage()
+	if err != nil {
+		return false, err
+	}
 	if result == "" {
-		//超时了
+		//Overtime
 		this.upnp.Active = false
-		return false
+		return false, nil
 	}
 	this.resolve(result)
 
 	this.upnp.Gateway.ServiceType = "urn:schemas-upnp-org:service:WANIPConnection:1"
 	this.upnp.Active = true
-	return true
+	return true, nil
 }
-func (this *SearchGateway) send(c chan string) {
-	//发送组播消息，要带上端口，格式如："239.255.255.250:1900"
+func (this *SearchGateway) SendMessage() (result string, err error) {
+	//Send broadcast messages to bring the port, formats such as: "239.255.255.250:1900"
 	var conn *net.UDPConn
 	defer func() {
 		if r := recover(); r != nil {
-			//超时了
+			err = fmt.Errorf("panic err: %s", r)
 		}
 	}()
 	go func(conn *net.UDPConn) {
 		defer func() {
 			if r := recover(); r != nil {
-				//没超时
+				log.Printf("panic in timeout conn err: %s", err)
 			}
 		}()
-		//超时时间为3秒
+		//Timeout to 3 seconds
 		time.Sleep(time.Second * 3)
-		c <- ""
-		conn.Close()
+		if err := conn.Close(); err != nil {
+			log.Printf("conn close err: %s", err)
+		}
 	}(conn)
+
 	remotAddr, err := net.ResolveUDPAddr("udp", "239.255.255.250:1900")
 	if err != nil {
-		log.Println("组播地址格式不正确")
+		return "", fmt.Errorf("Multicast address format is incorrect err: %s", err)
 	}
-	locaAddr, err := net.ResolveUDPAddr("udp", this.upnp.LocalHost+":")
 
+	locaAddr, err := net.ResolveUDPAddr("udp", this.upnp.LocalHost+":")
 	if err != nil {
-		log.Println("本地ip地址格式不正确")
+		return "", fmt.Errorf("Local IP address is incorrent err: %s", err)
 	}
+
 	conn, err = net.ListenUDP("udp", locaAddr)
-	defer conn.Close()
 	if err != nil {
-		log.Println("监听udp出错")
+		return "", fmt.Errorf("Listening udp error err: %s", err)
 	}
+	defer func(conn net.Conn) {
+		if err := conn.Close(); err != nil {
+			log.Printf("conn close err: %s", err)
+		}
+	}(conn)
+
 	_, err = conn.WriteToUDP([]byte(this.searchMessage), remotAddr)
 	if err != nil {
-		log.Println("发送msg到组播地址出错")
-	}
-	buf := make([]byte, 1024)
-	n, _, err := conn.ReadFromUDP(buf)
-	if err != nil {
-		log.Println("从组播地址接搜消息出错")
+		return "", fmt.Errorf("Sent to a multicast address err: %s", err)
 	}
 
-	result := string(buf[:n])
-	c <- result
+	buf := make([]byte, 1024)
+
+	n, _, err := conn.ReadFromUDP(buf)
+	if err != nil {
+		return "", fmt.Errorf("Error message received from a multicast address")
+	}
+
+	return string(buf[:n]), nil
 }
+
 func (this *SearchGateway) buildRequest() {
 	this.searchMessage = "M-SEARCH * HTTP/1.1\r\n" +
 		"HOST: 239.255.255.250:1900\r\n" +
@@ -99,7 +111,7 @@ func (this *SearchGateway) resolve(result string) {
 
 	lines := strings.Split(result, "\r\n")
 	for _, line := range lines {
-		//按照第一个冒号分为两个字符串
+		//According to a first colon into two strings
 		nameValues := strings.SplitAfterN(line, ":", 2)
 		if len(nameValues) < 2 {
 			continue
