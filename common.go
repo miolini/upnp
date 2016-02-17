@@ -14,7 +14,7 @@ func GetLocalIntenetIp() (string, error) {
 	  Analyzing energy networking ip address
 	*/
 
-	conn, err := net.Dial("udp", "google.com:80")
+	conn, err := net.Dial("udp4", "google.com:80")
 	if err != nil {
 		return "", errors.New("You can not connect to the network")
 	}

@@ -1,8 +1,8 @@
 package upnp
 
 import (
-	"fmt"
 	"log"
+	"fmt"
 	"net"
 	"strings"
 )
@@ -61,17 +61,15 @@ func (this *SearchGateway) SendMessage() (result string, err error) {
 	//		log.Printf("conn close err: %s", err)
 	//	}
 	//}(conn)
-
 	remotAddr, err := net.ResolveUDPAddr("udp", "239.255.255.250:1900")
 	if err != nil {
 		return "", fmt.Errorf("Multicast address format is incorrect err: %s", err)
 	}
 
-	locaAddr, err := net.ResolveUDPAddr("udp", this.upnp.LocalHost+":")
+	locaAddr, err := net.ResolveUDPAddr("udp", this.upnp.LocalHost+":0")
 	if err != nil {
 		return "", fmt.Errorf("Local IP address is incorrent err: %s", err)
 	}
-
 	conn, err = net.ListenUDP("udp", locaAddr)
 	if err != nil {
 		return "", fmt.Errorf("Listening udp error err: %s", err)

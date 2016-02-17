@@ -100,7 +100,7 @@ func (this *Upnp) SearchGateway() (err error) {
 		}
 		this.LocalHost, err = GetLocalIntenetIp()
 		if err != nil {
-			return
+			return err
 		}
 	}
 	searchGateway := SearchGateway{upnp: this}
@@ -148,11 +148,11 @@ func (this *Upnp) ExternalIPAddr() (err error) {
 
 //Adding a port mapping
 func (this *Upnp) AddPortMapping(localPort, remotePort int, protocol string) (err error) {
-	defer func(err error) {
+	defer func(err *error) {
 		if errTemp := recover(); errTemp != nil {
-			err = fmt.Errorf("panic err: %s", err)
+			*err = fmt.Errorf("panic err: %s", err)
 		}
-	}(err)
+	}(&err)
 	if this.GatewayOutsideIP == "" {
 		if err := this.ExternalIPAddr(); err != nil {
 			return err

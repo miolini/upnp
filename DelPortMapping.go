@@ -2,7 +2,6 @@ package upnp
 
 import (
 	"io/ioutil"
-	// "log"
 	"net/http"
 	"strconv"
 	"strings"
