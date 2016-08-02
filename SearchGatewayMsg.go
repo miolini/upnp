@@ -1,10 +1,15 @@
 package upnp
 
 import (
-	"log"
 	"fmt"
+	"log"
 	"net"
 	"strings"
+	"time"
+)
+
+const (
+	readTimeout = 10 * time.Second
 )
 
 type Gateway struct {
@@ -49,18 +54,6 @@ func (this *SearchGateway) SendMessage() (result string, err error) {
 			err = fmt.Errorf("panic err: %s", r)
 		}
 	}()
-	//go func(conn *net.UDPConn) {
-	//	defer func() {
-	//		if r := recover(); r != nil {
-	//			log.Printf("panic in timeout conn err: %s", err)
-	//		}
-	//	}()
-	//	//Timeout to 3 seconds
-	//	time.Sleep(time.Second * 3)
-	//	if err := conn.Close(); err != nil {
-	//		log.Printf("conn close err: %s", err)
-	//	}
-	//}(conn)
 	remotAddr, err := net.ResolveUDPAddr("udp", "239.255.255.250:1900")
 	if err != nil {
 		return "", fmt.Errorf("Multicast address format is incorrect err: %s", err)
@@ -87,9 +80,13 @@ func (this *SearchGateway) SendMessage() (result string, err error) {
 
 	buf := make([]byte, 1024)
 
+	err = conn.SetReadDeadline(time.Now().Add(readTimeout))
+	if err != nil {
+		return "", fmt.Errorf("Error setting deadline for connection: %s", err)
+	}
 	n, _, err := conn.ReadFromUDP(buf)
 	if err != nil {
-		return "", fmt.Errorf("Error message received from a multicast address")
+		return "", fmt.Errorf("Error message received from a multicast address: %s", err)
 	}
 
 	return string(buf[:n]), nil
